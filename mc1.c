@@ -26,18 +26,19 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues);
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues);
 int AlternativeAssignment(int *Xvalue, int numberofvariables, int variable, int numberofvalues);
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions);
+int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile);
 
 int main()
 {
-    int maxTries = 20;
+    int maxTries = 10;
     int maxChanges = 100;
     int numberofvariables = 73;
     int days = 20;
     int Xvalue[numberofvariables]; // X1, X2, ..., X70...values...Practically X1, X2, ..., X70
     int numberofvalues = days * 3; // Timeslots = days * 3
-    int PrecedureRestarts = 5; // The whole procedure restarts
+    int PrecedureRestarts = 2; // The whole procedure restarts
 
-    FILE *outputFile = fopen("results.txt", "w"); // Open file to save results
+    FILE *outputFile = fopen("FIRST.txt", "w"); // Open file to save results
     if (outputFile == NULL)
     {
         printf("ERROR OPENING TXT FILE.\n");
@@ -60,18 +61,6 @@ int main()
         int Xvalue[numberofvariables];
         int moves = 0;
         int bestCollisions = INT_MAX;
-
-        // A := initial complete assignment of the variables in Problem
-        for (int i = 0; i < numberofvariables; i++)
-        {
-            Xvalue[i] = rand() % numberofvalues + 1;
-        }
-        // Print initial assignment
-        fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
-        for (int i = 0; i < numberofvariables; i++)
-        {
-            fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
-        }
 
         fprintf(outputFile, "RUN %d:\n", RestartsCounter);
 
@@ -111,10 +100,25 @@ int main()
     fprintf(outputFile, "----------------------------------------------\n");
 
     fclose(outputFile);
-    printf("RESULTS SAVED TO results.txt\n");
+    printf("RESULTS SAVED TO FIRST.txt\n");
 
     return 0;
 }
+
+int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile){
+        // A := initial complete assignment of the variables in Problem
+        for (int i = 0; i < numberofvariables; i++)
+        {
+            Xvalue[i] = rand() % numberofvalues + 1;
+        }
+        // Print initial assignment
+        fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
+        for (int i = 0; i < numberofvariables; i++)
+        {
+            fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
+        }
+        return Xvalue;
+    }
 
 // Read from CSV file
 void readConstraintsMatrix(const char *filename, int constraints[73][73]) {
@@ -258,11 +262,13 @@ int AlternativeAssignment(int *Xvalue, int numberofvariables, int variable, int 
 
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions)
 {
-
+    Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);  
     for (int i = 0; i < maxTries; i++)
     { // maxTries
         fprintf(outputFile, "TRY %d:\n", i);
-
+        // Initialize the assignment
+        // A := initial complete assignment of the variables in Problem
+       // Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);        
         for (int j = 0; j < maxChanges; j++)
         { //  for j:=1 to maxChanges do
             (*moves)++;
@@ -295,11 +301,12 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
 
             // if by making assignment (x,a) you get a cost ≤ current cost then make the assignment
             int CurrentValue = Xvalue[x];
-            Xvalue[x] = newAssignment;
+            
             int newCost = satisfies(Xvalue, numberofvariables, numberofvalues);
 
             // Go to (x,a)
             if (newCost <= currentCost){ // cost ≤ current cost
+                Xvalue[x] = newAssignment;
                 fprintf(outputFile, "Variable X%d assigned new value %d (Cost = %d)\n", x + 1, newAssignment, newCost);
             }
             else{
