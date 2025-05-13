@@ -1,16 +1,3 @@
-// compile with: gcc -o output mc1.c  
-// run with: ./output
-// Results will be saved in results.txt
-// test.csv is a testing csv to see if everything works ok... i mean 73x73
-// constraints.csv is the one that will be used in the algorithm and it is 73x73 as our courses...
-// We must implement it as Stergiou said
-// constraints types are (0,1,2,3,4)
-// 0 = no constraint
-// 1 = Xi != Xj
-// 2 = Xi / 3 != Xj / 3
-// 3 = abs(Xi / 3 - Xj / 3) > 6
-// 4 = (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
-// Do not care about what gets printed at output(just debugging)...check only .txt
 
 
 #include <stdio.h>
@@ -24,19 +11,19 @@
 void readConstraintsMatrix(const char *filename, int constraints[73][73]);
 int satisfies(int *Xvalue, int numberofvariables, int numberofvalues);
 int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalues);
-int AlternativeAssignment(int *Xvalue, int numberofvariables, int variable, int numberofvalues);
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues);
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions);
 int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile);
 
 int main()
 {
-    int maxTries = 10;
+    int maxTries = 1;
     int maxChanges = 100;
     int numberofvariables = 73;
-    int days = 20;
+    int days = 30;
     int Xvalue[numberofvariables]; // X1, X2, ..., X70...values...Practically X1, X2, ..., X70
     int numberofvalues = days * 3; // Timeslots = days * 3
-    int PrecedureRestarts = 2; // The whole procedure restarts
+    int PrecedureRestarts = 20;    // The whole procedure restarts
 
     FILE *outputFile = fopen("FIRST.txt", "w"); // Open file to save results
     if (outputFile == NULL)
@@ -105,25 +92,28 @@ int main()
     return 0;
 }
 
-int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile){
-        // A := initial complete assignment of the variables in Problem
-        for (int i = 0; i < numberofvariables; i++)
-        {
-            Xvalue[i] = rand() % numberofvalues + 1;
-        }
-        // Print initial assignment
-        fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
-        for (int i = 0; i < numberofvariables; i++)
-        {
-            fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
-        }
-        return Xvalue;
+int *initialize(int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile)
+{
+    // A := initial complete assignment of the variables in Problem
+    for (int i = 0; i < numberofvariables; i++)
+    {
+        Xvalue[i] = rand() % numberofvalues;
     }
+    // Print initial assignment
+    fprintf(outputFile, "INITIAL ASSIGNMENT:\n");
+    for (int i = 0; i < numberofvariables; i++)
+    {
+        fprintf(outputFile, "X%d = %d\n", i, Xvalue[i]);
+    }
+    return Xvalue;
+}
 
 // Read from CSV file
-void readConstraintsMatrix(const char *filename, int constraints[73][73]) {
+void readConstraintsMatrix(const char *filename, int constraints[73][73])
+{
     FILE *file = fopen(filename, "r");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         printf("ERROR OPENING CSV FILE.\n");
         exit(1);
     }
@@ -131,15 +121,20 @@ void readConstraintsMatrix(const char *filename, int constraints[73][73]) {
     char buffer[2048];
     int row = 0;
 
-    while (fgets(buffer, sizeof(buffer), file)) {
+    while (fgets(buffer, sizeof(buffer), file))
+    {
         char *token = strtok(buffer, ",");
         int col = 0;
 
-        while (token != NULL) {
+        while (token != NULL)
+        {
             // Handle empty cells by assigning 0
-            if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0) {
+            if (strcmp(token, "") == 0 || strcmp(token, "\n") == 0)
+            {
                 constraints[row][col] = 0;
-            } else {
+            }
+            else
+            {
                 constraints[row][col] = atoi(token);
             }
             token = strtok(NULL, ",");
@@ -157,24 +152,24 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues)
     int conflicts = 0;
     int constraints[73][73] = {0}; // Adjust size to 73x73
 
-    // Read the matrix from the CSV 
+    // Read the matrix from the CSV
     readConstraintsMatrix("BetterCSVview.csv", constraints);
 
-    // Check constraints...The four types of constraints we have 
+    // Check constraints...The four types of constraints we have
     for (int i = 0; i < numberofvariables; i++)
     {
-        for (int j = i+1; j < numberofvariables; j++)
+        for (int j = i + 1; j < numberofvariables; j++)
         {
 
             int constraint = constraints[i][j];
-            //printf("Checking constraint between X%d and X%d: %d\n", i, j, constraint);
+            // printf("Checking constraint between X%d and X%d: %d\n", i, j, constraint);
 
             if (constraint == 1)
             {
                 // Xi != Xj
                 if (Xvalue[i] == Xvalue[j])
                 {
-                    //printf("Conflict: X%d == X%d\n", i, j);
+                    // printf("Conflict: X%d == X%d\n", i, j);
                     conflicts++;
                 }
             }
@@ -184,7 +179,7 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues)
                 int diff = abs((Xvalue[i] / 3) - (Xvalue[j] / 3));
                 if (diff < 2)
                 {
-                    //printf("Conflict: abs(X%d / 3 - X%d / 3) = %d <= 6\n", i, j, diff);
+                    // printf("Conflict: abs(X%d / 3 - X%d / 3) = %d <= 6\n", i, j, diff);
                     conflicts++;
                 }
             }
@@ -193,7 +188,7 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues)
                 // Xi / 3 != Xj / 3
                 if ((Xvalue[i] / 3) == (Xvalue[j] / 3))
                 {
-                    //printf("Conflict: X%d / 3 == X%d / 3\n", i, j);
+                    // printf("Conflict: X%d / 3 == X%d / 3\n", i, j);
                     conflicts++;
                 }
             }
@@ -202,7 +197,7 @@ int satisfies(int *Xvalue, int numberofvariables, int numberofvalues)
                 // (Xi / 3 == Xj / 3 && Xi % 3 < Xj % 3)
                 if ((Xvalue[i] / 3 == Xvalue[j] / 3) && (Xvalue[i] % 3 >= Xvalue[j] % 3))
                 {
-                    //printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
+                    // printf("Conflict: X%d / 3 == X%d / 3 && X%d %% 3 >= X%d %% 3\n", i, j, i, j);
                     conflicts++;
                 }
             }
@@ -227,48 +222,50 @@ int RandomVariableConflict(int *Xvalue, int numberofvariables, int numberofvalue
         }
     }
 
-    if (Counter == 0){ // No conflicts
+    if (Counter == 0)
+    { // No conflicts
         return -1;
     }
 
     return VariableWithConflicts[rand() % Counter]; // Return a random variable with conflict
 }
 
-// Function for alternative value
-int AlternativeAssignment(int *Xvalue, int numberofvariables, int variable, int numberofvalues)
+int AlternativeAssignment(const int *Xvalue, int numberofvariables, int variable, int numberofvalues)
 {
-    int BetterValue = Xvalue[variable];
-    int TotalInitialConflicts = satisfies(Xvalue, numberofvariables, numberofvalues); // Number of total initial conflicts
+    int tempvalue[numberofvariables];
+    memcpy(tempvalue, Xvalue, sizeof(int) * numberofvariables);
+    int bestValue = tempvalue[variable];
+    int minConflicts = INT_MAX;
 
-    for (int NewValue = 0; NewValue < numberofvalues; NewValue++)
-    { // Assign every value to every variable
-        Xvalue[variable] = NewValue;
+    for (int value = 0; value < numberofvalues; value++)
+    {
 
-        // Calculate the number of conflicts with this value
-        int NewConflicts = satisfies(Xvalue, numberofvariables, numberofvalues);
+        if (value == tempvalue[variable])
+            continue;
 
-        // Fewer conflicts
-        if (NewConflicts < TotalInitialConflicts)
+        tempvalue[variable] = value;
+
+        int conflicts = satisfies(tempvalue, numberofvariables, numberofvalues);
+
+        if (conflicts < minConflicts)
         {
-            TotalInitialConflicts = NewConflicts;
-            BetterValue = NewValue;
+            minConflicts = conflicts;
+            bestValue = value;
         }
     }
 
-    Xvalue[variable] = BetterValue;
-
-    return BetterValue; // Return the alternative assignment of x which satisfies the maximum number of constraints
+    return bestValue;
 }
 
 void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariables, int numberofvalues, FILE *outputFile, int *moves, int *bestCollisions)
 {
-    Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);  
+
     for (int i = 0; i < maxTries; i++)
     { // maxTries
         fprintf(outputFile, "TRY %d:\n", i);
         // Initialize the assignment
         // A := initial complete assignment of the variables in Problem
-       // Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);        
+        Xvalue = initialize(Xvalue, numberofvariables, numberofvalues, outputFile);
         for (int j = 0; j < maxChanges; j++)
         { //  for j:=1 to maxChanges do
             (*moves)++;
@@ -301,19 +298,28 @@ void minConflicts(int maxTries, int maxChanges, int *Xvalue, int numberofvariabl
 
             // if by making assignment (x,a) you get a cost ≤ current cost then make the assignment
             int CurrentValue = Xvalue[x];
-            
+            Xvalue[x] = newAssignment;
             int newCost = satisfies(Xvalue, numberofvariables, numberofvalues);
 
             // Go to (x,a)
-            if (newCost <= currentCost){ // cost ≤ current cost
+            if (newCost <= currentCost)
+            { // cost ≤ current cost
                 Xvalue[x] = newAssignment;
-                fprintf(outputFile, "Variable X%d assigned new value %d (Cost = %d)\n", x + 1, newAssignment, newCost);
+                fprintf(outputFile, "Variable X%d assigned new value %d (Cost = %d)\n", x, newAssignment, newCost);
             }
-            else{
+
+            else
+            {
                 // Go to CurrentValue
                 Xvalue[x] = CurrentValue;
-                fprintf(outputFile, "Variable X%d reverted to value %d (Cost = %d)\n", x + 1, CurrentValue, currentCost);
+                fprintf(outputFile, "Variable X%d reverted to value %d (Cost = %d)\n", x, CurrentValue, currentCost);
             }
+        }
+        // Print the assignment after all maxChanges
+        fprintf(outputFile, "Assignment after maxChanges:\n");
+        for (int k = 0; k < numberofvariables; k++)
+        {
+            fprintf(outputFile, "X%d = %d\n", k, Xvalue[k]);
         }
     }
 
